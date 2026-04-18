@@ -1,0 +1,139 @@
+import axios, { AxiosInstance, AxiosError } from "axios";
+import {
+  GenderizeApiResponse,
+  AgifyApiResponse,
+  NationalizeApiResponse,
+  GenderData,
+  AgeData,
+  NationalityData,
+  EnrichedProfileData,
+  ExternalApiError,
+  EXTERNAL_API_NAMES,
+  ExternalApiName,
+} from "../types";
+import { classifyAge } from "../utils";
+
+const API_TIMEOUT_MS = 30_000;
+
+export class ExternalApiService {
+  private readonly client: AxiosInstance;
+  private readonly urls: Readonly<{
+    genderize: string;
+    agify: string;
+    nationalize: string;
+  }>;
+
+  constructor() {
+    this.urls = Object.freeze({
+      genderize: process.env.GENDERIZE_URL || "https://api.genderize.io",
+      agify: process.env.AGIFY_URL || "https://api.agify.io",
+      nationalize: process.env.NATIONALIZE_URL || "https://api.nationalize.io",
+    });
+
+    this.client = axios.create({
+      timeout: API_TIMEOUT_MS,
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "ProfileIntelligenceService/1.0",
+      },
+    });
+  }
+
+  async getGender(name: string): Promise<GenderData> {
+    let data: GenderizeApiResponse;
+
+    try {
+      const response = await this.client.get<GenderizeApiResponse>(
+        this.urls.genderize,
+        { params: { name } }
+      );
+      data = response.data;
+    } catch (err) {
+      this.logAxiosError(err, EXTERNAL_API_NAMES.GENDERIZE);
+      throw new ExternalApiError(EXTERNAL_API_NAMES.GENDERIZE);
+    }
+
+    if (data.gender === null || data.count === 0) {
+      throw new ExternalApiError(EXTERNAL_API_NAMES.GENDERIZE);
+    }
+
+    return {
+      gender: data.gender,
+      gender_probability: data.probability,
+      sample_size: data.count,
+    };
+  }
+
+  async getAge(name: string): Promise<AgeData> {
+    let data: AgifyApiResponse;
+
+    try {
+      const response = await this.client.get<AgifyApiResponse>(
+        this.urls.agify,
+        { params: { name } }
+      );
+      data = response.data;
+    } catch (err) {
+      this.logAxiosError(err, EXTERNAL_API_NAMES.AGIFY);
+      throw new ExternalApiError(EXTERNAL_API_NAMES.AGIFY);
+    }
+
+    if (data.age === null) {
+      throw new ExternalApiError(EXTERNAL_API_NAMES.AGIFY);
+    }
+
+    return {
+      age: data.age,
+      age_group: classifyAge(data.age),
+    };
+  }
+
+  async getNationality(name: string): Promise<NationalityData> {
+    let data: NationalizeApiResponse;
+
+    try {
+      const response = await this.client.get<NationalizeApiResponse>(
+        this.urls.nationalize,
+        { params: { name } }
+      );
+      data = response.data;
+    } catch (err) {
+      this.logAxiosError(err, EXTERNAL_API_NAMES.NATIONALIZE);
+      throw new ExternalApiError(EXTERNAL_API_NAMES.NATIONALIZE);
+    }
+
+    if (!data.country || data.country.length === 0) {
+      throw new ExternalApiError(EXTERNAL_API_NAMES.NATIONALIZE);
+    }
+
+    const top = data.country[0];
+
+    return {
+      country_id: top.country_id,
+      country_probability: top.probability,
+    };
+  }
+
+  async enrichName(name: string): Promise<EnrichedProfileData> {
+    const genderData = await this.getGender(name);
+    const ageData = await this.getAge(name);
+    const nationalityData = await this.getNationality(name);
+
+    return { ...genderData, ...ageData, ...nationalityData };
+  }
+
+  private logAxiosError(err: unknown, apiName: ExternalApiName): void {
+    if (axios.isAxiosError(err)) {
+      const e = err as AxiosError;
+      console.error(`[ExternalApiService] ${apiName} failed:`, {
+        status: e.response?.status,
+        message: e.message,
+        url: e.config?.url,
+      });
+    } else {
+      console.error(`[ExternalApiService] ${apiName} unexpected error:`, err);
+    }
+  }
+}
+
+export const externalApiService = new ExternalApiService();

@@ -1,4 +1,8 @@
-# Data Persistence
+# Data Persistence Stage 2
+
+Query Engine upgrade: advanced filtering, sorting, pagination, and natural language search.
+
+---
 
 **Node.js · TypeScript · Express 5 · TypeORM · MySQL
 ---
@@ -55,17 +59,63 @@ npm start
 
 ---
 
-## Validation
+## Filtering
 
-| Input | Status | Message |
-|-------|--------|---------|
-| No name field | 400 | Name is required |
-| `name: ""` | 400 | Name is required |
-| `name: "  "` | 400 | Name is required |
-| `name: 123` | 422 | Name must be a string |
-| `name: true` | 422 | Name must be a string |
-| `name: "ella"` | 201 | Profile created |
-| `name: "ELLA"` (dup) | 201 | Profile already exists |
+```bash
+GET /api/profiles?gender=male&country_id=NG&min_age=25
+GET /api/profiles?age_group=adult&min_gender_probability=0.9
+GET /api/profiles?min_age=20&max_age=40
+
+### Supported Filters
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `gender` | string | male or female |
+| `age_group` | string | child, teenager, adult, senior |
+| `country_id` | string | ISO 2-letter code |
+| `min_age` | number | Minimum age |
+| `max_age` | number | Maximum age |
+| `min_gender_probability` | float | Min gender confidence |
+| `min_country_probability` | float | Min country confidence |
+
+---
+
+## Sorting
+
+```bash
+GET /api/profiles?sort_by=age&order=asc
+GET /api/profiles?sort_by=gender_probability&order=desc
+```
+
+| Param | Values |
+|-------|--------|
+| `sort_by` | `age`, `created_at`, `gender_probability` |
+| `order` | `asc`, `desc` |
+
+---
+
+## Pagination
+
+```bash
+GET /api/profiles?page=2&limit=20
+```
+
+| Param | Default | Max |
+|-------|---------|-----|
+| `page` | 1 | — |
+| `limit` | 10 | 50 |
+
+Response format:
+
+```json
+{
+  "status": "success",
+  "page": 1,
+  "limit": 10,
+  "total": 2026,
+  "data": []
+}
+```
 
 ---
 
@@ -78,3 +128,17 @@ npm start
 | 422 | Name is not a string |
 | 502 | External API returned invalid data |
 | 500 | Internal server error |
+
+---
+
+## NLQ Parser Explanation
+
+The natural language parser (`api/services/nlq.service.ts`) uses rule-based keyword matching:
+
+1. **Gender** — scans for keywords: `male`, `males`, `man`, `men`, `female`, `females`, `woman`, `women`, etc.
+2. **Age group** — scans for: `child`, `teen`, `teenager`, `adult`, `senior`, `elderly`
+3. **Age ranges** — regex patterns for: `above X`, `below X`, `between X and Y`, `aged X`, `young` (16–24)
+4. **Country** — dictionary of 80+ country names mapped to ISO codes, sorted longest-first to avoid partial matches
+5. **Unmatched** — if nothing matches, returns `null` → 400 response
+
+No query is sent to an external API. All parsing runs in-memory.

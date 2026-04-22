@@ -6,34 +6,33 @@ import { errorResponse } from "../utils";
 import { HTTP_STATUS } from "../types";
 
 function resolveStatusCode(
-	errors: CVError[],
-	body: Record<string, unknown>
-  ): number {
-	for (const err of errors) {
-	  const value = body[err.property];
-  
-	  if (
-		value !== undefined &&
-		value !== null &&
-		typeof value !== "string"
-	  ) {
-		return HTTP_STATUS.UNPROCESSABLE_ENTITY;
-	  }
-	}
-	// Default to 400 for missing fields (undefined) or null
-	return HTTP_STATUS.BAD_REQUEST;
+  errors: CVError[],
+  body: Record<string, unknown>
+): number {
+  for (const err of errors) {
+    const value = body[err.property];
+    if (
+      value !== undefined &&
+      value !== null &&
+      typeof value !== "string" &&
+      err.constraints?.isString
+    ) {
+      return HTTP_STATUS.UNPROCESSABLE_ENTITY;
+    }
   }
+  return HTTP_STATUS.BAD_REQUEST;
+}
 
 function extractFirstMessage(errors: CVError[]): string {
   const first = errors[0];
-  if (!first) return "Validation failed";
+  if (!first) return "Invalid query parameters";
   if (first.constraints) {
-    return Object.values(first.constraints)[0] ?? "Validation failed";
+    return Object.values(first.constraints)[0] ?? "Invalid query parameters";
   }
   if (first.children?.length) {
     return extractFirstMessage(first.children);
   }
-  return "Validation failed";
+  return "Invalid query parameters";
 }
 
 export function validateBody<T extends object>(DtoClass: ClassConstructor<T>) {
@@ -63,6 +62,34 @@ export function validateBody<T extends object>(DtoClass: ClassConstructor<T>) {
     }
 
     (req as Request & { dto: T }).dto = instance;
+    next();
+  };
+}
+
+export function validateQuery<T extends object>(DtoClass: ClassConstructor<T>) {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    const instance = plainToInstance(DtoClass, req.query, {
+      enableImplicitConversion: false,
+      excludeExtraneousValues: false,
+    });
+
+    const errors = await validate(instance, {
+      whitelist: false,
+      forbidNonWhitelisted: false,
+      stopAtFirstError: true,
+    });
+
+    if (errors.length > 0) {
+      res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(errorResponse(extractFirstMessage(errors)));
+      return;
+    }
+
     next();
   };
 }

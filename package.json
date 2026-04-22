@@ -1,6 +1,6 @@
 {
   "name": "datapersistenceapi",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "dist/server.js",
   "engines": {
     "node": ">=18.0.0",
@@ -10,6 +10,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only --exit-child server.ts",
+    "seed": "ts-node scripts/seed.ts",
     "test": "jest --runInBand --forceExit --detectOpenHandles",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --coverageDirectory=coverage",

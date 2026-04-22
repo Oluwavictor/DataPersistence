@@ -35,6 +35,7 @@ export interface GenderizeApiResponse {
   
   export interface NationalityData {
 	readonly country_id: string;
+	readonly country_name: string;
 	readonly country_probability: number;
   }
   
@@ -88,6 +89,14 @@ export interface GenderizeApiResponse {
 	readonly data: T;
   }
   
+  export interface PaginatedResponse<T = unknown> {
+	readonly status: "success";
+	readonly page: number;
+	readonly limit: number;
+	readonly total: number;
+	readonly data: T[];
+  }
+  
   export interface ErrorResponse {
 	readonly status: "error";
 	readonly message: string;
@@ -100,11 +109,12 @@ export interface GenderizeApiResponse {
 	readonly name: string;
 	readonly gender: string;
 	readonly gender_probability: number;
-	readonly sample_size: number;
+	readonly sample_size?: number;
 	readonly age: number;
 	readonly age_group: string;
-	readonly country_id: string | null;
-	readonly country_probability: number | null;
+	readonly country_id: string;
+	readonly country_name: string;
+	readonly country_probability: number;
 	readonly created_at: string;
   }
   
@@ -114,13 +124,30 @@ export interface GenderizeApiResponse {
 	readonly gender: string;
 	readonly age: number;
 	readonly age_group: string;
-	readonly country_id: string | null;
+	readonly country_id: string;
+	readonly country_name: string;
   }
   
   export interface ProfileFilters {
-	readonly gender?: string;
-	readonly country_id?: string;
-	readonly age_group?: string;
+	gender?: string;
+	age_group?: string;
+	country_id?: string;
+	min_age?: string;
+	max_age?: string;
+	min_gender_probability?: string;
+	min_country_probability?: string;
+	sort_by?: string;
+	order?: string;
+	page?: string;
+	limit?: string;
+  }
+  
+  export interface NLQFilters {
+	gender?: string;
+	age_group?: string;
+	country_id?: string;
+	min_age?: number;
+	max_age?: number;
   }
   
   export abstract class AppError extends Error {

@@ -1,4 +1,3 @@
-
 import { uuidv7 } from "uuidv7";
 import {
   AGE_GROUP,
@@ -43,6 +42,15 @@ export function successResponse<T>(
   return response;
 }
 
+export function paginatedResponse<T>(
+  data: T[],
+  page: number,
+  limit: number,
+  total: number
+): PaginatedResponse<T> {
+  return { status: "success", page, limit, total, data };
+}
+
 export function errorResponse(message: string): ErrorResponse {
   return { status: "error", message };
 }
@@ -71,6 +79,7 @@ export function toFullProfile(entity: Profile): ProfileFullResponse {
     age: toNumber(entity.age),
     age_group: entity.age_group,
     country_id: entity.country_id,
+    country_name: entity.country_name,
     country_probability:
       entity.country_probability !== null
         ? toNumber(entity.country_probability)
@@ -87,5 +96,6 @@ export function toListItem(entity: Profile): ProfileListItem {
     age: toNumber(entity.age),
     age_group: entity.age_group,
     country_id: entity.country_id,
+    country_name: entity.country_name,
   };
 }

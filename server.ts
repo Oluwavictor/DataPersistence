@@ -5,6 +5,7 @@ dotenv.config();
 
 import app from "./api/utils/app";
 import { AppDataSource } from "./api/database/data-source";
+import { seedDatabase } from "./api/services/seed.service";
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
@@ -13,10 +14,12 @@ async function bootstrap(): Promise<void> {
     await AppDataSource.initialize();
     console.log("MySQL connected via TypeORM");
 
+    await seedDatabase();
+
     app.listen(PORT, () => {
-      console.log(` Server  : http://localhost:${PORT}`);
-      console.log(` Swagger : http://localhost:${PORT}/api/docs`);
-      console.log(` Env     : ${process.env.NODE_ENV || "development"}\n`);
+      console.log(`Server  : http://localhost:${PORT}`);
+      console.log(`Swagger : http://localhost:${PORT}/api/docs`);
+      console.log(` Env : ${process.env.NODE_ENV || "development"}\n`);
     });
   } catch (err) {
     console.error(" Startup failed:", err);

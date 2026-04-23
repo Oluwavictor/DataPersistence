@@ -7,6 +7,7 @@ import {
   ErrorResponse,
   ProfileFullResponse,
   ProfileListItem,
+  PaginatedResponse,
 } from "../types";
 import { Profile } from "../entities/Profile";
 

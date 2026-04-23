@@ -112,9 +112,9 @@ export interface GenderizeApiResponse {
 	readonly sample_size?: number;
 	readonly age: number;
 	readonly age_group: string;
-	readonly country_id: string;
-	readonly country_name: string;
-	readonly country_probability: number;
+	readonly country_id: string | null;
+	readonly country_name: string | null;
+	readonly country_probability: number | null;
 	readonly created_at: string;
   }
   
@@ -124,8 +124,8 @@ export interface GenderizeApiResponse {
 	readonly gender: string;
 	readonly age: number;
 	readonly age_group: string;
-	readonly country_id: string;
-	readonly country_name: string;
+	readonly country_id: string | null;
+	readonly country_name: string | null;
   }
   
   export interface ProfileFilters {

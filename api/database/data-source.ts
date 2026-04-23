@@ -21,7 +21,8 @@ const options: DataSourceOptions = {
     ? process.env.DB_NAME_TEST || "profile_intelligence_test"
     : process.env.DB_NAME || process.env.MYSQLDATABASE || "profile_intelligence",
 
-  synchronize: !isProduction,
+  //synchronize: !isProduction,
+  synchronize: true,
   logging: !isProduction && !isTest,
 
   entities: [Profile],

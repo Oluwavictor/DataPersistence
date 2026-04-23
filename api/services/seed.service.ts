@@ -18,7 +18,8 @@ interface SeedProfile {
 export async function seedDatabase(): Promise<void> {
   const repo = AppDataSource.getRepository(Profile);
 
-  const scriptsDir = path.join(__dirname, "../../scripts");
+  // const scriptsDir = path.join(__dirname, "../../scripts");
+  const scriptsDir = path.join(process.cwd(), "scripts");
 
   if (!fs.existsSync(scriptsDir)) {
     console.warn("scripts/ folder not found, skipping seed");

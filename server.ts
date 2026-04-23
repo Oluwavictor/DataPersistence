@@ -68,21 +68,21 @@ const PORT = parseInt(process.env.PORT || "3000", 10);
 
 async function bootstrap(): Promise<void> {
   try {
+
+    await AppDataSource.initialize();
+    console.log(" MySQL connected via TypeORM");
    
     if (process.env.FORCE_SYNC === "true") {
-      console.log(" FORCE_SYNC=true → Dropping tables & recreating schema...");
+      console.log(" FORCE_SYNC=true - Dropping tables & recreating schema...");
       
       await AppDataSource.synchronize(true);
       console.log(" Schema updated successfully!");
     }
     
 
-    await AppDataSource.initialize();
-    console.log(" MySQL connected via TypeORM");
-
     // - AUTO-SEED 
     if (process.env.RUN_SEED === "true") {
-      console.log(" RUN_SEED=true → starting seed...");
+      console.log(" RUN_SEED=true - starting seed...");
       await seedDatabase();
       console.log(" Seeding complete");
     }

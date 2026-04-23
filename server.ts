@@ -72,7 +72,7 @@ async function bootstrap(): Promise<void> {
     if (process.env.FORCE_SYNC === "true") {
       console.log(" FORCE_SYNC=true → Dropping tables & recreating schema...");
       
-      await AppDataSource.synchronize({ force: true });
+      await AppDataSource.synchronize(true);
       console.log(" Schema updated successfully!");
     }
     

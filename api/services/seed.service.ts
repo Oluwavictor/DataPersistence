@@ -8,6 +8,7 @@ interface SeedProfile {
   name: string;
   gender: string;
   gender_probability: number;
+  sample_size: number; 
   age: number;
   country_id: string;
   country_name: string;
@@ -18,7 +19,7 @@ export async function seedDatabase(): Promise<void> {
   const repo = AppDataSource.getRepository(Profile);
 
   const scriptsDir = path.join(__dirname, "../../scripts");
-  
+
   if (!fs.existsSync(scriptsDir)) {
     console.warn("scripts/ folder not found, skipping seed");
     return;
@@ -50,7 +51,6 @@ export async function seedDatabase(): Promise<void> {
     return;
   }
 
-   // profiles: [...] } or [...]
   let profiles: SeedProfile[];
 
   if (Array.isArray(parsed)) {
@@ -108,6 +108,7 @@ export async function seedDatabase(): Promise<void> {
         name: normalizedName,
         gender: p.gender || "unknown",
         gender_probability: p.gender_probability || 0,
+        sample_size: p.sample_size || 0,
         age: p.age || 0,
         age_group: classifyAge(p.age || 0),
         country_id: p.country_id || "XX",
@@ -117,7 +118,8 @@ export async function seedDatabase(): Promise<void> {
 
       await repo.save(profile);
       inserted++;
-    } catch {
+    } catch (err) {
+      console.error(`Error inserting ${p.name}:`, err);
       errors++;
     }
   }

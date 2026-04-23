@@ -1,3 +1,4 @@
+// bootstrap();
 import "reflect-metadata";
 import dotenv from "dotenv";
 
@@ -5,21 +6,27 @@ dotenv.config();
 
 import app from "./api/utils/app";
 import { AppDataSource } from "./api/database/data-source";
-import { seedDatabase } from "./api/services/seed.service";
+import { seedDatabase } from "./api/services/seed.service";   // ← your seed function
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
 async function bootstrap(): Promise<void> {
   try {
     await AppDataSource.initialize();
-    console.log("MySQL connected via TypeORM");
+    console.log(" MySQL connected via TypeORM");
 
-    await seedDatabase();
+    // ---------- AUTO-SEED (only if RUN_SEED=true) ----------
+    if (process.env.RUN_SEED === "true") {
+      console.log(" RUN_SEED=true → starting seed...");
+      await seedDatabase();
+      console.log(" Seeding complete");
+    }
+    // -------------------------------------------------------
 
     app.listen(PORT, () => {
-      console.log(`Server  : http://localhost:${PORT}`);
-      console.log(`Swagger : http://localhost:${PORT}/api/docs`);
-      console.log(` Env : ${process.env.NODE_ENV || "development"}\n`);
+      console.log(`\n Server  : http://localhost:${PORT}`);
+      console.log(` Swagger : http://localhost:${PORT}/api/docs`);
+      console.log(` Env     : ${process.env.NODE_ENV || "development"}\n`);
     });
   } catch (err) {
     console.error(" Startup failed:", err);

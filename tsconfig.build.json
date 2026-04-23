@@ -6,6 +6,6 @@
 	  "sourceMap": false,
 	  "declarationMap": false
 	},
-	"exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.d.ts", "jest.config.ts"],
-	"include": ["api/**/*", "scripts/**/*"]
+	"include": ["server.ts", "api/**/*.ts"],
+	"exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.d.ts", "jest.config.ts"]
   }

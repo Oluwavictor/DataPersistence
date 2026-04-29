@@ -16,14 +16,41 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// app.use(
+//   cors({
+//     // origin: "*",
+//     origin: process.env.FRONTEND_URL || "http://localhost:5173",
+//     credentials: true,
+//     methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"],
+//     allowedHeaders: [
+//       "Content-Type", 
+//       "Authorization",
+//       "X-API-Version",
+//       "X-CSRF-Token",
+//     ],
+//   })
+// );
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:4000",
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    // origin: "*",
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl, mobile, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked: ${origin}`));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"],
     allowedHeaders: [
-      "Content-Type", 
+      "Content-Type",
       "Authorization",
       "X-API-Version",
       "X-CSRF-Token",
@@ -31,19 +58,7 @@ app.use(
   })
 );
 
-// if (process.env.NODE_ENV !== "test") {
-//   app.use((req: Request, res: Response, next: NextFunction) => {
-//     const start = Date.now();
-//     res.on("finish", () => {
-//       const ms = Date.now() - start;
-//       const line = `${req.method} ${req.originalUrl} → ${res.statusCode} [${ms}ms]`;
-//       res.statusCode >= 400
-//         ? console.error(`  ${line}`)
-//         : console.log(`   ${line}`);
-//     });
-//     next();
-//   });
-// }
+
 if (process.env.NODE_ENV !== "test") {
   app.use(requestLogger);
 }

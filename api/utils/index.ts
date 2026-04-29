@@ -47,9 +47,11 @@ export function paginatedResponse<T>(
   data: T[],
   page: number,
   limit: number,
-  total: number
+  total: number,
+  totalPages: number,
+  links: { self: string; next: string | null; prev: string | null }
 ): PaginatedResponse<T> {
-  return { status: "success", page, limit, total, data };
+  return { status: "success", page, limit, total, total_pages: totalPages, links, data };
 }
 
 export function errorResponse(message: string): ErrorResponse {

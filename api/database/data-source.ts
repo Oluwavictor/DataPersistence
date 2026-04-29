@@ -1,6 +1,8 @@
 import "reflect-metadata";
 import { DataSource, DataSourceOptions } from "typeorm";
 import { Profile } from "../entities/Profile";
+import { User } from "../entities/User";
+import { RefreshToken } from "../entities/RefreshToken";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -18,14 +20,14 @@ const options: DataSourceOptions = {
   password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || "",
 
   database: isTest
-    ? process.env.DB_NAME_TEST || "profile_intelligence_test"
-    : process.env.DB_NAME || process.env.MYSQLDATABASE || "profile_intelligence",
+    ? process.env.DB_NAME_TEST || "insighta_test"
+    : process.env.DB_NAME || process.env.MYSQLDATABASE || "insighta",
 
   //synchronize: !isProduction,
   synchronize: true,
   logging: !isProduction && !isTest,
 
-  entities: [Profile],
+  entities: [Profile, User, RefreshToken],
 
   charset: "utf8mb4_unicode_ci",
 

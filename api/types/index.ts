@@ -73,8 +73,11 @@ export interface GenderizeApiResponse {
 	CREATED: 201,
 	NO_CONTENT: 204,
 	BAD_REQUEST: 400,
+	UNAUTHORIZED: 401,
+	FORBIDDEN: 403,
 	NOT_FOUND: 404,
 	UNPROCESSABLE_ENTITY: 422,
+	TOO_MANY_REQUESTS: 429,
 	INTERNAL_SERVER_ERROR: 500,
 	BAD_GATEWAY: 502,
   } as const;
@@ -94,6 +97,12 @@ export interface GenderizeApiResponse {
 	readonly page: number;
 	readonly limit: number;
 	readonly total: number;
+	readonly total_pages: number;
+	readonly links: {
+	  readonly self: string;
+	  readonly next: string | null;
+	  readonly prev: string | null;
+	};
 	readonly data: T[];
   }
   
@@ -149,6 +158,23 @@ export interface GenderizeApiResponse {
 	min_age?: number;
 	max_age?: number;
   }
+
+  export interface AuthenticatedUser {
+	id: string;
+	github_id: string;
+	username: string;
+	email: string | null;
+	avatar_url: string | null;
+	role: "admin" | "analyst";
+	is_active: boolean;
+  }
+
+  export interface TokenPayload {
+	sub: string;
+	username: string;
+	role: string;
+	type: "access" | "refresh";
+  }
   
   export abstract class AppError extends Error {
 	public abstract readonly statusCode: HttpStatusCode;
@@ -172,6 +198,16 @@ export interface GenderizeApiResponse {
 	constructor(message: string) {
 	  super(message);
 	}
+  }
+
+  export class UnauthorizedError extends AppError {
+	public readonly statusCode = HTTP_STATUS.UNAUTHORIZED;
+	constructor(message = "Unauthorized") { super(message); }
+  }
+
+  export class ForbiddenError extends AppError {
+	public readonly statusCode = HTTP_STATUS.FORBIDDEN;
+	constructor(message = "Forbidden") { super(message); }
   }
   
   export class NotFoundError extends AppError {

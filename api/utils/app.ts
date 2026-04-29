@@ -1,9 +1,12 @@
 import "reflect-metadata";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "../docs/swagger";
+import authRoutes from "../routes/auth.routes";
 import profileRoutes from "../routes/profile.routes";
+import { requestLogger } from "../middleware/requestLogger.middleware";
 import { errorResponse } from "./index";
 import { AppError, HTTP_STATUS } from "../types";
 
@@ -11,27 +14,38 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "*",
-    methods: ["GET", "POST", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    // origin: "*",
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+    methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"],
+    allowedHeaders: [
+      "Content-Type", 
+      "Authorization",
+      "X-API-Version",
+      "X-CSRF-Token",
+    ],
   })
 );
 
+// if (process.env.NODE_ENV !== "test") {
+//   app.use((req: Request, res: Response, next: NextFunction) => {
+//     const start = Date.now();
+//     res.on("finish", () => {
+//       const ms = Date.now() - start;
+//       const line = `${req.method} ${req.originalUrl} → ${res.statusCode} [${ms}ms]`;
+//       res.statusCode >= 400
+//         ? console.error(`  ${line}`)
+//         : console.log(`   ${line}`);
+//     });
+//     next();
+//   });
+// }
 if (process.env.NODE_ENV !== "test") {
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    const start = Date.now();
-    res.on("finish", () => {
-      const ms = Date.now() - start;
-      const line = `${req.method} ${req.originalUrl} → ${res.statusCode} [${ms}ms]`;
-      res.statusCode >= 400
-        ? console.error(`⚠  ${line}`)
-        : console.log(`   ${line}`);
-    });
-    next();
-  });
+  app.use(requestLogger);
 }
 
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -44,13 +58,14 @@ app.get("/api/docs.json", (_req: Request, res: Response) => {
 app.get("/", (_req: Request, res: Response) => {
   res.json({
     status: "success",
-    message: "Profile Intelligence Service is running",
-    version: "1.0.0",
+    message: "Insighta Labs API",
+    version: "3.0.0",
     docs: "/api/docs",
     timestamp: new Date().toISOString(),
   });
 });
 
+app.use("/auth", authRoutes);
 app.use("/api/profiles", profileRoutes);
 
 app.use((_req: Request, res: Response) => {

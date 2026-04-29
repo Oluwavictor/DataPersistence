@@ -28,6 +28,31 @@ const DEFAULT_PAGE = 1;
 
 const profileRepository = () => AppDataSource.getRepository(Profile);
 
+function buildPaginationLinks(
+  baseUrl: string,
+  page: number,
+  limit: number,
+  total: number,
+  query: Record<string, string>
+): { self: string; next: string | null; prev: string | null } {
+  const totalPages = Math.ceil(total / limit);
+
+  const buildUrl = (p: number): string => {
+    const params = new URLSearchParams({
+      ...query,
+      page: String(p),
+      limit: String(limit),
+    });
+    return `${baseUrl}?${params.toString()}`;
+  };
+
+  return {
+    self: buildUrl(page),
+    next: page < totalPages ? buildUrl(page + 1) : null,
+    prev: page > 1 ? buildUrl(page - 1) : null,
+  };
+}
+
 export class ProfileController {
   async create(
     req: DtoRequest<CreateProfileDto>,
@@ -155,10 +180,37 @@ export class ProfileController {
       }
 
       const [profiles, total] = await qb.getManyAndCount();
+      const totalPages = Math.ceil(total / limitNum);
+
+      const queryParams: Record<string, string> = {};
+      if (gender) queryParams.gender = gender;
+      if (age_group) queryParams.age_group = age_group;
+      if (country_id) queryParams.country_id = country_id;
+      if (min_age) queryParams.min_age = min_age;
+      if (max_age) queryParams.max_age = max_age;
+      if (sort_by) queryParams.sort_by = sort_by;
+      if (order) queryParams.order = order;
+
+      const links = buildPaginationLinks(
+        "/api/profiles",
+        pageNum,
+        limitNum,
+        total,
+        queryParams
+      );
 
       res
         .status(HTTP_STATUS.OK)
-        .json(paginatedResponse(profiles.map(toListItem), pageNum, limitNum, total));
+        .json(
+          paginatedResponse(
+            profiles.map(toListItem),
+            pageNum, 
+            limitNum, 
+            total,
+            totalPages,
+            links
+          )
+        );
     } catch (err) {
       next(err);
     }
@@ -226,10 +278,110 @@ export class ProfileController {
       }
 
       const [profiles, total] = await qb.getManyAndCount();
+      const totalPages = Math.ceil(total / limitNum);
+
+      const links = buildPaginationLinks(
+        "/api/profiles/search",
+        pageNum,
+        limitNum,
+        total,
+        { q }
+      );
 
       res
         .status(HTTP_STATUS.OK)
-        .json(paginatedResponse(profiles.map(toListItem), pageNum, limitNum, total));
+        .json(
+          paginatedResponse(
+            profiles.map(toListItem), 
+            pageNum, 
+            limitNum, 
+            total,
+            totalPages,
+            links
+          )
+        );
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async exportCsv(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {
+        gender, age_group, country_id,
+        min_age, max_age,
+        min_gender_probability, min_country_probability,
+        sort_by, order,
+      } = req.query as ProfileFilters;
+
+      const sortField =
+        sort_by && VALID_SORT_FIELDS[sort_by]
+          ? VALID_SORT_FIELDS[sort_by]
+          : "p.created_at";
+      const sortOrder =
+        order && order.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+      const qb = profileRepository()
+        .createQueryBuilder("p")
+        .orderBy(sortField, sortOrder);
+
+      if (gender) qb.andWhere("LOWER(p.gender) = LOWER(:gender)", { gender });
+      if (age_group) qb.andWhere("LOWER(p.age_group) = LOWER(:age_group)", { age_group });
+      if (country_id) qb.andWhere("UPPER(p.country_id) = UPPER(:country_id)", { country_id });
+      if (min_age) qb.andWhere("p.age >= :min_age", { min_age: parseInt(min_age, 10) });
+      if (max_age) qb.andWhere("p.age <= :max_age", { max_age: parseInt(max_age, 10) });
+      if (min_gender_probability) {
+        qb.andWhere("p.gender_probability >= :mgp", {
+          mgp: parseFloat(min_gender_probability),
+        });
+      }
+      if (min_country_probability) {
+        qb.andWhere("p.country_probability >= :mcp", {
+          mcp: parseFloat(min_country_probability),
+        });
+      }
+
+      const profiles = await qb.getMany();
+
+      const headers = [
+        "id", "name", "gender", "gender_probability",
+        "age", "age_group", "country_id", "country_name",
+        "country_probability", "created_at",
+      ];
+
+      const rows = profiles.map((p) => [
+        p.id,
+        p.name,
+        p.gender,
+        p.gender_probability,
+        p.age,
+        p.age_group,
+        p.country_id,
+        p.country_name,
+        p.country_probability,
+        p.created_at instanceof Date
+          ? p.created_at.toISOString()
+          : String(p.created_at),
+      ]);
+
+      const csv = [
+        headers.join(","),
+        ...rows.map((row) =>
+          row
+            .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+            .join(",")
+        ),
+      ].join("\n");
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const filename = `profiles_${timestamp}.csv`;
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`
+      );
+      res.status(HTTP_STATUS.OK).send(csv);
     } catch (err) {
       next(err);
     }

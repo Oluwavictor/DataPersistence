@@ -5,6 +5,7 @@ export declare class ProfileController {
   getById(req: Request, res: Response, next: NextFunction): Promise<void>;
   list(req: Request, res: Response, next: NextFunction): Promise<void>;
   search(req: Request, res: Response, next: NextFunction): Promise<void>;
+  exportCsv(req: Request, res: Response, next: NextFunction): Promise<void>;
   delete(req: Request, res: Response, next: NextFunction): Promise<void>;
 }
 

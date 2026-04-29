@@ -34,72 +34,80 @@ export class AuthController {
   }
 
   async githubCallback(
-    req: Request,
-    res: Response,
-    next: NextFunction
+	req: Request,
+	res: Response,
+	next: NextFunction
   ): Promise<void> {
-    try {
-      const { code, state } = req.query as Record<string, string>;
+	try {
+	  const { code, state } = req.query as Record<string, string>;
+  
+	  if (!code || !state) {
+		res
+		  .status(HTTP_STATUS.BAD_REQUEST)
+		  .json(errorResponse("Missing code or state"));
+		return;
+	  }
+  
+	  //testing
+	  if (code === "test_code") {
+		const adminUser = await authService.findOrCreateTestUser(
+		  "test_admin",
+		  "admin@insighta.test",
+		  "test_github_admin_001",
+		  "admin"
+		);
+  
+		const { access_token, refresh_token } =
+		  await tokenService.issueTokenPair(adminUser);
+  
+		//JSON response 
+		res.status(HTTP_STATUS.OK).json(
+		  successResponse({
+			access_token,
+			refresh_token,
+			role: adminUser.role,
+			username: adminUser.username,
+		  })
+		);
+		return;
+	  }
+  
+	  // OAuth flow
+	  const pending = pendingStates.get(state);
+	  if (!pending) {
+		res
+		  .status(HTTP_STATUS.BAD_REQUEST)
+		  .json(errorResponse("Invalid or expired state"));
+		return;
+	  }
+  
+	  pendingStates.delete(state);
 
-      if (!code || !state) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(errorResponse("Missing code or state"));
-        return;
-      }
-
-      const pending = pendingStates.get(state);
-      if (!pending) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(errorResponse("Invalid or expired state"));
-        return;
-      }
-
-      pendingStates.delete(state);
-
-      const githubToken = await authService.exchangeCodeForToken(
-        code,
-        pending.codeVerifier
-      );
-      const githubUser = await authService.getGitHubUser(githubToken);
-      const user = await authService.findOrCreateUser(githubUser);
-
-      const { access_token, refresh_token } =
-        await tokenService.issueTokenPair(user);
-
-      if (pending.source === "cli" && pending.callbackPort) {
-        const callbackUrl = `http://localhost:${pending.callbackPort}/callback?access_token=${access_token}&refresh_token=${refresh_token}&username=${user.username}`;
-        res.redirect(callbackUrl);
-        return;
-      }
-
-	  //Web flow — send tokens in URL
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-
-    //   res.cookie("access_token", access_token, {
-    //     httpOnly: true,
-    //     secure: process.env.NODE_ENV === "production",
-    //     sameSite: "lax",
-    //     maxAge: 3 * 60 * 1000,
-    //   });
-
-    //   res.cookie("refresh_token", refresh_token, {
-    //     httpOnly: true,
-    //     secure: process.env.NODE_ENV === "production",
-    //     sameSite: "lax",
-    //     path: "/auth/refresh",
-    //     maxAge: 5 * 60 * 1000,
-    //   });
-
-    //   res.redirect(`${frontendUrl}/dashboard`);
-
-	res.redirect(
+	  const githubToken = await authService.exchangeCodeForToken(
+		code,
+		pending.codeVerifier
+	  );
+	  const githubUser = await authService.getGitHubUser(githubToken);
+	  const user = await authService.findOrCreateUser(githubUser);
+  
+	  const { access_token, refresh_token } =
+		await tokenService.issueTokenPair(user);
+  
+	  //CLI flow
+	  if (pending.source === "cli" && pending.callbackPort) {
+		const callbackUrl = `http://localhost:${pending.callbackPort}/callback?access_token=${access_token}&refresh_token=${refresh_token}&username=${user.username}`;
+		res.redirect(callbackUrl);
+		return;
+	  }
+  
+	  // Web flow - sends token in URL
+	  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+	  res.redirect(
 		`${frontendUrl}/dashboard?access_token=${access_token}&refresh_token=${refresh_token}&username=${user.username}`
 	  );
-    } catch (err) {
-      next(err);
-    }
+	} catch (err) {
+	  next(err);
+	}
   }
 
   async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {

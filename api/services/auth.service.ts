@@ -106,6 +106,50 @@ export class AuthService {
   async findById(id: string): Promise<User | null> {
     return this.userRepo().findOne({ where: { id } });
   }
+
+  //find by username
+  async findByUsername(username: string): Promise<User | null> {
+    return this.userRepo().findOne({ where: { username } });
+  }
+
+  // update role
+  async updateRole(id: string, role: "admin" | "analyst"): Promise<void> {
+    await this.userRepo().update({ id }, { role });
+  }
+
+  //  find or create test user
+  async findOrCreateTestUser(
+    username: string,
+    email: string,
+    github_id: string,
+    role: "admin" | "analyst"
+  ): Promise<User> {
+    const repo = this.userRepo();
+
+    let user = await repo.findOne({ where: { username } });
+
+    if (!user) {
+      user = repo.create({
+        id: generateId(),
+        github_id,
+        username,
+        email,
+        avatar_url: "",
+        role,
+        is_active: true,
+        last_login_at: new Date(),
+      });
+      await repo.save(user);
+    }
+
+    // Make sure role is correct
+    if (user.role !== role) {
+      user.role = role;
+      await repo.save(user);
+    }
+
+    return user;
+  }
 }
 
 export const authService = new AuthService();

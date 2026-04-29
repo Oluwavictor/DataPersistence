@@ -77,6 +77,14 @@ export class TokenService {
     }
   }
 
+  verifyRefreshTokenJwt(token: string): TokenPayload {
+    try {
+      return jwt.verify(token, REFRESH_SECRET) as TokenPayload;
+    } catch {
+      throw new UnauthorizedError("Invalid or expired refresh token");
+    }
+  }
+  
   async rotateRefreshToken(
     rawToken: string
   ): Promise<{ access_token: string; refresh_token: string }> {

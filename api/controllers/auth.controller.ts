@@ -74,24 +74,29 @@ export class AuthController {
         return;
       }
 
+	  //Web flow — send tokens in URL
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
-      res.cookie("access_token", access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 3 * 60 * 1000,
-      });
+    //   res.cookie("access_token", access_token, {
+    //     httpOnly: true,
+    //     secure: process.env.NODE_ENV === "production",
+    //     sameSite: "lax",
+    //     maxAge: 3 * 60 * 1000,
+    //   });
 
-      res.cookie("refresh_token", refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/auth/refresh",
-        maxAge: 5 * 60 * 1000,
-      });
+    //   res.cookie("refresh_token", refresh_token, {
+    //     httpOnly: true,
+    //     secure: process.env.NODE_ENV === "production",
+    //     sameSite: "lax",
+    //     path: "/auth/refresh",
+    //     maxAge: 5 * 60 * 1000,
+    //   });
 
-      res.redirect(`${frontendUrl}/dashboard`);
+    //   res.redirect(`${frontendUrl}/dashboard`);
+
+	res.redirect(
+		`${frontendUrl}/dashboard?access_token=${access_token}&refresh_token=${refresh_token}&username=${user.username}`
+	  );
     } catch (err) {
       next(err);
     }

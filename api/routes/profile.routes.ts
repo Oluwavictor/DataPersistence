@@ -11,8 +11,8 @@ import { QueryProfileDto } from "../dtos/QueryProfile.dto";
 
 const router = Router();
 
-router.use(authenticate);
-router.use(requireApiVersion);
+router.use(requireApiVersion); 
+router.use(authenticate);      
 router.use(apiRateLimiter);
 
 router.get(

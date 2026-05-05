@@ -23,6 +23,17 @@ router.post("/refresh", (req: Request, res: Response, next: NextFunction) =>
   authController.refresh(req, res, next)
 );
 
+// router.post("/promote",
+//   authenticate,
+//   requireRole("admin"),
+//   async (req, res, next) => {
+//     const { username } = req.body;
+//     const user = await authService.findByUsername(username);
+//     await authService.updateRole(user.id, "admin");
+//     res.json(successResponse({ message: `${username} is now admin` }));
+//   }
+// );
+
 router.post(
   "/logout",
   authenticate,

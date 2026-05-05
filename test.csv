@@ -1,0 +1,5 @@
+name,gender,age,country_id,country_name
+Alice Johnson,female,28,US,United States
+Bob Smith,male,35,NG,Nigeria
+Invalid Row,,,-5,
+Charlie Brown,male,25,GB,United Kingdom

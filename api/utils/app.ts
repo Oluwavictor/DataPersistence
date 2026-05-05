@@ -10,6 +10,7 @@ import { requestLogger } from "../middleware/requestLogger.middleware";
 import { errorResponse, successResponse } from "./index";
 import { AppError, HTTP_STATUS } from "../types";
 import { authenticate } from "../middleware/auth.middleware";
+import ingestionRoutes from "../routes/ingestion.routes";
 
 const app = express();
 
@@ -78,6 +79,7 @@ app.get(
 
 app.use("/auth", authRoutes);
 app.use("/api/profiles", profileRoutes);
+app.use("/api/ingestion", ingestionRoutes)
 
 app.use((_req: Request, res: Response) => {
   res.status(HTTP_STATUS.NOT_FOUND).json(errorResponse("Route not found"));

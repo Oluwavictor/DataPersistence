@@ -16,11 +16,14 @@
 // 	name!: string;
   
 // 	@Index("idx_profile_gender")
-// 	@Column({ type: "varchar", length: 10 })
+// 	@Column({ type: "varchar", length: 50 })
 // 	gender!: string;
   
-// 	@Column({ type: "float" })
+// 	@Column({ type: "decimal", precision: 5, scale: 4 })
 // 	gender_probability!: number;
+  
+// 	@Column({ type: "int", unsigned: true })
+// 	sample_size!: number; 
   
 // 	@Index("idx_profile_age")
 // 	@Column({ type: "int", unsigned: true })
@@ -31,14 +34,14 @@
 // 	age_group!: string;
   
 // 	@Index("idx_profile_country_id")
-// 	@Column({ type: "varchar", length: 2 })
-// 	country_id!: string;
+// 	@Column({ type: "char", length: 2, nullable: true })
+// 	country_id!: string | null;
   
-// 	@Column({ type: "varchar", length: 100 })
-// 	country_name!: string;
+// 	@Column({ type: "varchar", length: 100, nullable: true })
+// 	country_name!: string | null;
   
-// 	@Column({ type: "float" })
-// 	country_probability!: number;
+// 	@Column({ type: "decimal", precision: 5, scale: 4, nullable: true })
+// 	country_probability!: number | null;
   
 // 	@Index("idx_profile_created_at")
 // 	@CreateDateColumn({ type: "timestamp" })
@@ -54,6 +57,10 @@ import {
   } from "typeorm";
   
   @Entity("profiles")
+  // Composite indexes for common filter combinations
+  @Index("idx_gender_country", ["gender", "country_id"])
+  @Index("idx_gender_country_age_group", ["gender", "country_id", "age_group"])
+  @Index("idx_country_age_group", ["country_id", "age_group"])
   export class Profile {
 	@PrimaryColumn({ type: "varchar", length: 36 })
 	id!: string;
@@ -70,7 +77,7 @@ import {
 	gender_probability!: number;
   
 	@Column({ type: "int", unsigned: true })
-	sample_size!: number; 
+	sample_size!: number;
   
 	@Index("idx_profile_age")
 	@Column({ type: "int", unsigned: true })
@@ -93,4 +100,4 @@ import {
 	@Index("idx_profile_created_at")
 	@CreateDateColumn({ type: "timestamp" })
 	created_at!: Date;
-  }
+}

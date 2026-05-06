@@ -150,4 +150,4 @@ export interface NormalizedFilters {
 	  }, {} as Record<string, any>);
   
 	return `${prefix}:${JSON.stringify(sorted)}`;
-  }
+}

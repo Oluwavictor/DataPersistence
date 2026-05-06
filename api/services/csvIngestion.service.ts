@@ -61,7 +61,7 @@ export class CsvIngestionService {
     const chunk: CsvRow[] = [];
 
     await new Promise<void>((resolve) => {
-      // Stream the buffer — never load entire file into memory
+      // Stream the buffer - never load entire file into memory
       const stream = Readable.from(buffer);
 
       const parser = stream.pipe(
@@ -215,8 +215,8 @@ export class CsvIngestionService {
           .createQueryBuilder()
           .insert()
           .into(Profile)
-          .values(validRows)
-          .orIgnore() // skip duplicates without failing
+          .values(validRows) // array of 500 objects
+          .orIgnore() // skip duplicates instead of failing
           .execute();
 
         result.inserted += validRows.length;

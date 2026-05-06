@@ -12,7 +12,9 @@ const FIRST_NAMES = {
     "Walter", "Kyle", "Harold", "Carl", "Jeremy", "Keith", "Roger", "Gerald",
     "Ethan", "Arthur", "Terry", "Lawrence", "Sean", "Christian", "Albert", "Joe",
     "Mohammed", "Ahmed", "Ibrahim", "Hassan", "Ali", "Yusuf", "Omar", "Tunde",
-    "Chinedu", "Olumide", "Femi", "Segun", "Bayo", "Kwame", "Kofi", "Amadou"
+    "Chinedu", "Olumide", "Femi", "Segun", "Bayo", "Kwame", "Kofi", "Amadou",
+    "Abdul", "Karim", "Rashid", "Tariq", "Faisal", "Hamza", "Imran", "Khalid",
+    "Salim", "Yasin", "Zain", "Adil", "Bilal", "Hadi", "Jamal", "Naeem"
   ],
   female: [
     "Mary", "Patricia", "Linda", "Barbara", "Elizabeth", "Jennifer", "Maria", "Susan",
@@ -26,7 +28,9 @@ const FIRST_NAMES = {
     "Rose", "Janice", "Kelly", "Nicole", "Judy", "Christina", "Kathy", "Theresa",
     "Beverly", "Denise", "Tammy", "Irene", "Jane", "Lori", "Rachel", "Marilyn",
     "Aisha", "Fatima", "Khadija", "Zainab", "Hauwa", "Amaka", "Chioma", "Ngozi",
-    "Folake", "Bukola", "Yetunde", "Adaeze", "Nneka", "Asha", "Akua", "Efua"
+    "Folake", "Bukola", "Yetunde", "Adaeze", "Nneka", "Asha", "Akua", "Efua",
+    "Layla", "Mariam", "Noor", "Sara", "Yara", "Zara", "Dunia", "Hala",
+    "Iman", "Jana", "Kenza", "Lina", "Nada", "Rania", "Salma", "Tala"
   ]
 };
 
@@ -38,7 +42,10 @@ const LAST_NAMES = [
   "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill",
   "Adeyemi", "Okonkwo", "Adebayo", "Eze", "Nwosu", "Mensah", "Diallo", "Traore",
   "Kone", "Boateng", "Asante", "Owusu", "Mwangi", "Otieno", "Tshuma", "Ndebele",
-  "Khan", "Patel", "Singh", "Kumar", "Sharma", "Ali", "Hussain", "Rahman"
+  "Khan", "Patel", "Singh", "Kumar", "Sharma", "Ali", "Hussain", "Rahman",
+  "Cohen", "Levi", "Mizrahi", "Rosen", "Goldberg", "Friedman", "Klein", "Stern",
+  "Park", "Kim", "Lee", "Choi", "Jung", "Kang", "Yoon", "Han",
+  "Wang", "Li", "Zhang", "Liu", "Chen", "Yang", "Zhao", "Huang"
 ];
 
 const COUNTRIES = [
@@ -61,7 +68,12 @@ const COUNTRIES = [
   { id: "IN", name: "India" },
   { id: "PK", name: "Pakistan" },
   { id: "AU", name: "Australia" },
-  { id: "CA", name: "Canada" }
+  { id: "CA", name: "Canada" },
+  { id: "RU", name: "Russia" },
+  { id: "TR", name: "Turkey" },
+  { id: "SA", name: "Saudi Arabia" },
+  { id: "ID", name: "Indonesia" },
+  { id: "TH", name: "Thailand" }
 ];
 
 function randomChoice(arr) {
@@ -72,87 +84,136 @@ function randomAge() {
   return Math.floor(Math.random() * 80) + 5;
 }
 
-function generateValidRow() {
+function generateValidRow(uniqueId) {
   const gender = Math.random() > 0.5 ? "male" : "female";
   const firstName = randomChoice(FIRST_NAMES[gender]);
   const lastName = randomChoice(LAST_NAMES);
   const country = randomChoice(COUNTRIES);
   const age = randomAge();
-  return `${firstName} ${lastName},${gender},${age},${country.id},${country.name}`;
+  // Add unique ID to ensure uniqueness across 500k rows
+  return `${firstName} ${lastName} ${uniqueId},${gender},${age},${country.id},${country.name}`;
 }
 
-function generateInvalidRow(type) {
+function generateInvalidRow(type, uniqueId) {
   const country = randomChoice(COUNTRIES);
-  const lastName = randomChoice(LAST_NAMES);
 
   switch (type) {
     case "missing_name":
       return `,male,30,${country.id},${country.name}`;
     case "missing_gender":
-      return `Missing Gender ${lastName},,30,${country.id},${country.name}`;
+      return `Missing Gender ${uniqueId},,30,${country.id},${country.name}`;
     case "missing_age":
-      return `Missing Age ${lastName},male,,${country.id},${country.name}`;
+      return `Missing Age ${uniqueId},male,,${country.id},${country.name}`;
     case "negative_age":
-      return `Negative Age ${lastName},female,-5,${country.id},${country.name}`;
+      return `Negative Age ${uniqueId},female,-5,${country.id},${country.name}`;
     case "invalid_age":
-      return `Invalid Age ${lastName},male,abc,${country.id},${country.name}`;
+      return `Invalid Age ${uniqueId},male,abc,${country.id},${country.name}`;
     case "invalid_gender":
-      return `Invalid Gender ${lastName},unknown,25,${country.id},${country.name}`;
+      return `Invalid Gender ${uniqueId},unknown,25,${country.id},${country.name}`;
     case "extreme_age":
-      return `Extreme Age ${lastName},female,200,${country.id},${country.name}`;
+      return `Extreme Age ${uniqueId},female,200,${country.id},${country.name}`;
     case "all_blank":
       return `,,,,`;
     default:
-      return generateValidRow();
+      return generateValidRow(uniqueId);
   }
 }
 
-const NUM_VALID_ROWS = 950;
-const NUM_INVALID_ROWS = 50;
-const NUM_DUPLICATE_ROWS = 30;
+// CONFIGURATION
 
-let csv = "name,gender,age,country_id,country_name\n";
-const usedNames = new Set();
+const TARGET_ROWS = 50000;
+const VALID_PERCENTAGE = 0.95;     // 95% valid
+const DUPLICATE_PERCENTAGE = 0.02; // 2% duplicates
+const INVALID_PERCENTAGE = 0.03;   // 3% invalid
 
-console.log(`Generating ${NUM_VALID_ROWS} valid rows...`);
+const NUM_VALID_ROWS = Math.floor(TARGET_ROWS * VALID_PERCENTAGE);
+const NUM_DUPLICATE_ROWS = Math.floor(TARGET_ROWS * DUPLICATE_PERCENTAGE);
+const NUM_INVALID_ROWS = TARGET_ROWS - NUM_VALID_ROWS - NUM_DUPLICATE_ROWS;
+
+const OUTPUT_FILE = 'test_500k.csv';
+
+
+// GENERATE FILE USING STREAMING WRITE
+
+console.log(' Generating 500K row CSV...');
+console.log(`   Target: ${TARGET_ROWS.toLocaleString()} rows`);
+console.log(`   Valid:      ${NUM_VALID_ROWS.toLocaleString()} (${VALID_PERCENTAGE * 100}%)`);
+console.log(`   Duplicates: ${NUM_DUPLICATE_ROWS.toLocaleString()} (${DUPLICATE_PERCENTAGE * 100}%)`);
+console.log(`   Invalid:    ${NUM_INVALID_ROWS.toLocaleString()} (${INVALID_PERCENTAGE * 100}%)`);
+console.log('');
+
+const startTime = Date.now();
+
+//  Use stream write to avoid memory issues
+const writeStream = fs.createWriteStream(OUTPUT_FILE);
+writeStream.write("name,gender,age,country_id,country_name\n");
+
+const validNames = [];
+let progress = 0;
+
+// Generate VALID rows
+console.log(' Generating valid rows...');
 for (let i = 0; i < NUM_VALID_ROWS; i++) {
-  let row;
-  let name;
-  let attempts = 0;
-  do {
-    row = generateValidRow();
-    name = row.split(",")[0].toLowerCase().trim();
-    attempts++;
-  } while (usedNames.has(name) && attempts < 10);
+  const row = generateValidRow(i);
+  writeStream.write(row + "\n");
 
-  usedNames.add(name);
-  csv += row + "\n";
+  // Track for duplicates
+  const name = row.split(",")[0].toLowerCase().trim();
+  validNames.push(name);
+
+  progress++;
+  if (progress % 50000 === 0) {
+    console.log(`   ${progress.toLocaleString()} / ${NUM_VALID_ROWS.toLocaleString()} valid rows`);
+  }
 }
 
-console.log(`Adding ${NUM_DUPLICATE_ROWS} duplicate rows...`);
-const namesArray = Array.from(usedNames);
+// Generate DUPLICATE rows
+console.log(' Generating duplicate rows...');
 for (let i = 0; i < NUM_DUPLICATE_ROWS; i++) {
-  const dupName = randomChoice(namesArray);
+  const dupName = randomChoice(validNames);
   const country = randomChoice(COUNTRIES);
-  csv += `${dupName},male,30,${country.id},${country.name}\n`;
+  writeStream.write(`${dupName},male,30,${country.id},${country.name}\n`);
+
+  if ((i + 1) % 5000 === 0) {
+    console.log(`   ${(i + 1).toLocaleString()} / ${NUM_DUPLICATE_ROWS.toLocaleString()} duplicates`);
+  }
 }
 
-console.log(`Adding ${NUM_INVALID_ROWS} invalid rows...`);
+// Generate INVALID rows
+console.log(' Generating invalid rows...');
 const invalidTypes = [
   "missing_name", "missing_gender", "missing_age",
   "negative_age", "invalid_age", "invalid_gender",
   "extreme_age", "all_blank"
 ];
 for (let i = 0; i < NUM_INVALID_ROWS; i++) {
-  csv += generateInvalidRow(randomChoice(invalidTypes)) + "\n";
+  writeStream.write(generateInvalidRow(randomChoice(invalidTypes), i) + "\n");
+
+  if ((i + 1) % 5000 === 0) {
+    console.log(`   ${(i + 1).toLocaleString()} / ${NUM_INVALID_ROWS.toLocaleString()} invalid`);
+  }
 }
 
-const total = NUM_VALID_ROWS + NUM_DUPLICATE_ROWS + NUM_INVALID_ROWS;
-fs.writeFileSync("test_bulk.csv", csv);
+writeStream.end();
 
-console.log("");
-console.log("✅ Generated test_bulk.csv");
-console.log(`   Total rows : ${total}`);
-console.log(`   Valid      : ${NUM_VALID_ROWS}`);
-console.log(`   Duplicates : ${NUM_DUPLICATE_ROWS}`);
-console.log(`   Invalid    : ${NUM_INVALID_ROWS}`);
+writeStream.on('finish', () => {
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+  const stats = fs.statSync(OUTPUT_FILE);
+  const fileSizeMB = (stats.size / 1024 / 1024).toFixed(2);
+
+  console.log('');
+  console.log(' Generation complete!');
+  console.log(`   File: ${OUTPUT_FILE}`);
+  console.log(`   Size: ${fileSizeMB} MB`);
+  console.log(`   Total rows: ${TARGET_ROWS.toLocaleString()}`);
+  console.log(`   Time: ${elapsed} seconds`);
+  console.log('');
+  console.log('Expected upload result:');
+  console.log(`   total_rows: ${TARGET_ROWS}`);
+  console.log(`   inserted:   ~${NUM_VALID_ROWS.toLocaleString()}`);
+  console.log(`   skipped:    ~${(NUM_DUPLICATE_ROWS + NUM_INVALID_ROWS).toLocaleString()}`);
+  console.log('     duplicate_name:  ~' + NUM_DUPLICATE_ROWS.toLocaleString());
+  console.log('     invalid_age:     ~' + Math.floor(NUM_INVALID_ROWS * 0.5).toLocaleString());
+  console.log('     missing_fields:  ~' + Math.floor(NUM_INVALID_ROWS * 0.4).toLocaleString());
+  console.log('     invalid_gender:  ~' + Math.floor(NUM_INVALID_ROWS * 0.1).toLocaleString());
+});

@@ -13,3 +13,10 @@ Thumbs.db
 *.swp
 *.swo
 tests/
+
+generate_test_csv copy.js
+generate_test_csv.js
+ggenerate_test_csv.js
+
+test_500k.csv
+test_bulk.csv

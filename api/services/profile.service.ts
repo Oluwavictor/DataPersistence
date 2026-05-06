@@ -114,7 +114,7 @@ export class ProfileService {
     });
 
     const saved = await repo.save(profile);
-
+	console.log(`[Redis] INVALIDATING cache patterns after write...`);
     // Invalidate list and search caches on write
     await invalidateCacheByPattern("profiles:list:*");
     await invalidateCacheByPattern("profiles:search:*");
@@ -126,11 +126,15 @@ export class ProfileService {
   }
 
   // Get By ID 
-
   async getById(id: string) {
     const cacheKey = `profiles:id:${id}`;
     const cached = await getCache(cacheKey);
-    if (cached) return JSON.parse(cached);
+    // if (cached) return JSON.parse(cached);
+	if (cached) {
+		console.log(`[Redis] ID HIT: ${cacheKey}`);
+		return JSON.parse(cached);
+	}
+	console.log(`[Redis] ID MISS: ${cacheKey}. Querying MySQL...`);
 
     const profile = await profileRepository().findOne({ where: { id } });
     if (!profile) throw new NotFoundError();
@@ -153,7 +157,12 @@ export class ProfileService {
 
     //check cache
     const cached = await getCache(cacheKey);
-    if (cached) return JSON.parse(cached);
+    // if (cached) return JSON.parse(cached);
+	if (cached) {
+		console.log(`[Redis] CACHE HIT: ${cacheKey}`);
+		return JSON.parse(cached);
+	}
+	console.log(`[Redis] CACHE MISS: ${cacheKey}. Querying MySQL...`); 
 
     //query database
     const { page: pageNum, limit: limitNum, sort_by, order } = normalized;
@@ -235,7 +244,12 @@ export class ProfileService {
       `:q=${q.toLowerCase().trim()}`;
 
     const cached = await getCache(cacheKey);
-    if (cached) return JSON.parse(cached);
+    // if (cached) return JSON.parse(cached);
+	if (cached) {
+		console.log(`[Redis] SEARCH HIT: ${cacheKey}`);
+		return JSON.parse(cached);
+	}
+	console.log(`[Redis] SEARCH MISS: ${cacheKey}. Querying MySQL...`);
 
     const { page: pageNum, limit: limitNum } = normalized;
     const offset = (pageNum - 1) * limitNum;
@@ -366,6 +380,7 @@ export class ProfileService {
     if (!profile) throw new NotFoundError();
 
     await repo.remove(profile);
+	// console.log(`[Redis] INVALIDATING cache patterns after write...`);
 
     await invalidateCacheByPattern("profiles:list:*");
     await invalidateCacheByPattern("profiles:search:*");

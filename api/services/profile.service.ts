@@ -86,8 +86,7 @@ function applyFilters(qb: any, filters: Partial<NormalizedFilters>): void {
 }
 
 export class ProfileService {
-  // ── Create ──────────────────────────────────────────────
-
+  // Create 
   async create(name: string) {
     const repo = profileRepository();
 
@@ -126,7 +125,7 @@ export class ProfileService {
     };
   }
 
-  // ── Get By ID ────────────────────────────────────────────
+  // Get By ID 
 
   async getById(id: string) {
     const cacheKey = `profiles:id:${id}`;
@@ -144,20 +143,19 @@ export class ProfileService {
     return result;
   }
 
-  // ── List ─────────────────────────────────────────────────
-
+  //List 
   async list(rawQuery: Record<string, any>) {
-    // Step 1 — normalize query params
+    //normalize query params
     const normalized = normalizeQuery(rawQuery);
 
-    // Step 2 — deterministic cache key
+    //deterministic cache key
     const cacheKey = buildCacheKey("profiles:list", normalized);
 
-    // Step 3 — check cache
+    //check cache
     const cached = await getCache(cacheKey);
     if (cached) return JSON.parse(cached);
 
-    // Step 4 — query database
+    //query database
     const { page: pageNum, limit: limitNum, sort_by, order } = normalized;
     const offset = (pageNum - 1) * limitNum;
 
@@ -206,14 +204,13 @@ export class ProfileService {
       links
     );
 
-    // Step 5 — cache result
+    // cache result
     await setCache(cacheKey, JSON.stringify(result), CACHE_TTL);
 
     return result;
   }
 
-  // ── Search ───────────────────────────────────────────────
-
+  // Search 
   async search(rawQuery: Record<string, any>) {
     const q = rawQuery.q as string;
 
@@ -276,7 +273,7 @@ export class ProfileService {
     return result;
   }
 
-  // ── Export CSV ───────────────────────────────────────────
+  // Export CSV 
 
   async exportCsv(rawQuery: ProfileFilters) {
     const {
@@ -361,7 +358,7 @@ export class ProfileService {
     return { csv, filename };
   }
 
-  // ── Delete ───────────────────────────────────────────────
+  // Delete 
 
   async delete(id: string) {
     const repo = profileRepository();

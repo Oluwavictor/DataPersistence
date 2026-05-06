@@ -61,7 +61,7 @@ export class CsvIngestionService {
     const chunk: CsvRow[] = [];
 
     await new Promise<void>((resolve) => {
-      // ✅ Stream the buffer — never load entire file into memory
+      // Stream the buffer — never load entire file into memory
       const stream = Readable.from(buffer);
 
       const parser = stream.pipe(
@@ -69,7 +69,7 @@ export class CsvIngestionService {
           columns: true,
           skip_empty_lines: true,
           trim: true,
-          // ✅ Don't fail entire file on bad rows
+          // Don't fail entire file on bad rows
           relax_column_count: true,
           encoding: "utf-8",
         })
@@ -79,7 +79,7 @@ export class CsvIngestionService {
         result.total_rows++;
         chunk.push(row);
 
-        // ✅ When chunk is full, pause and process
+        //  When chunk is full, pause and process
         if (chunk.length >= CHUNK_SIZE) {
           parser.pause();
           const currentChunk = chunk.splice(0, CHUNK_SIZE);
@@ -104,7 +104,7 @@ export class CsvIngestionService {
       });
     });
 
-    // ✅ Invalidate cache after bulk write
+    //  Invalidate cache after bulk write
     await invalidateCacheByPattern("profiles:list:*");
     await invalidateCacheByPattern("profiles:search:*");
 
@@ -117,12 +117,12 @@ export class CsvIngestionService {
   ): Promise<void> {
     const validRows: Omit<Profile, "created_at">[] = [];
 
-    // ✅ Get all names in this chunk first
+    // Get all names in this chunk first
     const names = rows
       .map((r) => r.name?.toLowerCase().trim())
       .filter(Boolean) as string[];
 
-    // ✅ Check duplicates in one query — not per row
+    // Check duplicates in one query — not per row
     const existing = await this.repo()
       .createQueryBuilder("p")
       .select("p.name")
@@ -133,7 +133,7 @@ export class CsvIngestionService {
 
     for (const row of rows) {
       try {
-        // ── Validate name ─────────────────────────────
+        // Validate name
         if (!row.name || !row.name.trim()) {
           result.skipped++;
           result.reasons.missing_fields++;
@@ -142,14 +142,14 @@ export class CsvIngestionService {
 
         const name = row.name.toLowerCase().trim();
 
-        // ── Check duplicate ───────────────────────────
+        // Check duplicate
         if (existingNames.has(name)) {
           result.skipped++;
           result.reasons.duplicate_name++;
           continue;
         }
 
-        // ── Validate gender ───────────────────────────
+        // Validate gender
         if (!row.gender || !row.gender.trim()) {
           result.skipped++;
           result.reasons.missing_fields++;
@@ -163,7 +163,7 @@ export class CsvIngestionService {
           continue;
         }
 
-        // ── Validate age ──────────────────────────────
+        // Validate age
         if (!row.age || !row.age.trim()) {
           result.skipped++;
           result.reasons.missing_fields++;
@@ -177,7 +177,7 @@ export class CsvIngestionService {
           continue;
         }
 
-        // ── Build profile row ─────────────────────────
+        // Build profile row
         const ageGroup = row.age_group?.trim() || getAgeGroup(age);
         const countryId = row.country_id?.toUpperCase().trim() || null;
         const countryName = row.country_name?.trim() || countryId;
@@ -198,17 +198,17 @@ export class CsvIngestionService {
           country_probability: isNaN(countryProb) ? null : countryProb,
         } as any);
 
-        // ✅ Track inserted names to prevent
+        // Track inserted names to prevent
         // duplicates within the same chunk
         existingNames.add(name);
       } catch {
-        // ── Any unexpected error skips the row ─────────
+        // Any unexpected error skips the row 
         result.skipped++;
         result.reasons.malformed_row++;
       }
     }
 
-    // ✅ Bulk insert — not one by one
+    //  Bulk insert - not one by one
     if (validRows.length > 0) {
       try {
         await this.repo()
@@ -221,7 +221,7 @@ export class CsvIngestionService {
 
         result.inserted += validRows.length;
       } catch {
-        // ✅ If bulk insert fails, fall back to
+        // If bulk insert fails, fall back to
         // individual inserts to maximize inserted rows
         for (const row of validRows) {
           try {

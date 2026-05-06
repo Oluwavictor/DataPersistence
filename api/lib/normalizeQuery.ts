@@ -42,7 +42,7 @@ export interface NormalizedFilters {
 	  limit: DEFAULT_LIMIT,
 	};
   
-	// ── Gender ───────────────────────────────────────────
+	// Gender
 	if (raw.gender) {
 	  const g = String(raw.gender).toLowerCase().trim();
 	  if (VALID_GENDERS.includes(g)) {
@@ -50,7 +50,7 @@ export interface NormalizedFilters {
 	  }
 	}
   
-	// ── Age Group ────────────────────────────────────────
+	// Age Group 
 	if (raw.age_group) {
 	  const ag = String(raw.age_group).toLowerCase().trim();
 	  if (VALID_AGE_GROUPS.includes(ag)) {
@@ -58,7 +58,7 @@ export interface NormalizedFilters {
 	  }
 	}
   
-	// ── Country ──────────────────────────────────────────
+	// Country 
 	// Accept both country_id and country
 	const rawCountry = raw.country_id || raw.country;
 	if (rawCountry) {
@@ -68,7 +68,7 @@ export interface NormalizedFilters {
 	  }
 	}
   
-	// ── Age Range ────────────────────────────────────────
+	// Age Range 
 	if (raw.min_age !== undefined && raw.min_age !== "") {
 	  const v = parseInt(String(raw.min_age), 10);
 	  if (!isNaN(v) && v >= 0) filters.min_age = v;
@@ -79,7 +79,7 @@ export interface NormalizedFilters {
 	  if (!isNaN(v) && v >= 0) filters.max_age = v;
 	}
   
-	// ── Probability Filters ──────────────────────────────
+	// Probability Filters 
 	if (raw.min_gender_probability !== undefined) {
 	  const v = parseFloat(String(raw.min_gender_probability));
 	  if (!isNaN(v) && v >= 0 && v <= 1) {
@@ -94,7 +94,7 @@ export interface NormalizedFilters {
 	  }
 	}
   
-	// ── Sort ─────────────────────────────────────────────
+	// Sort 
 	if (raw.sort_by) {
 	  const s = String(raw.sort_by).toLowerCase().trim();
 	  if (VALID_SORT_FIELDS.includes(s)) {
@@ -109,7 +109,7 @@ export interface NormalizedFilters {
 	  }
 	}
   
-	// ── Pagination ───────────────────────────────────────
+	// Pagination 
 	if (raw.page) {
 	  const v = parseInt(String(raw.page), 10);
 	  if (!isNaN(v) && v > 0) filters.page = v;

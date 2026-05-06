@@ -5,15 +5,27 @@ const isTest = process.env.NODE_ENV === "test";
 function createRedisClient(): Redis | null {
   if (isTest) return null;
 
-  const host = process.env.REDISHOST || process.env.REDIS_HOST;
-  if (!host) return null;
+  const host =
+    process.env["REDISHOST"] || process.env["REDIS_HOST"];
+
+  if (!host) {
+    console.log("[Redis] No REDISHOST configured — caching disabled");
+    return null;
+  }
 
   const port = parseInt(
-    process.env.REDISPORT || process.env.REDIS_PORT || "6379",
+    process.env["REDISPORT"] ||
+      process.env["REDIS_PORT"] ||
+      "6379",
     10
   );
+
   const password =
-    process.env.REDISPASSWORD || process.env.REDIS_PASSWORD || undefined;
+    process.env["REDISPASSWORD"] ||
+      process.env["REDIS_PASSWORD"] ||
+      undefined;
+
+  console.log(`[Redis] Connecting to ${host}:${port}...`);
 
   return new Redis({
     host,
@@ -28,9 +40,13 @@ function createRedisClient(): Redis | null {
 export const redisClient = createRedisClient();
 
 if (redisClient) {
-  redisClient.connect().catch(() => {
-    console.warn("[Redis] Could not connect — caching disabled");
-  });
+  redisClient.connect()
+    .then(() => {
+      console.log("[Redis]  Connected successfully");
+    })
+    .catch(() => {
+      console.warn("[Redis] Could not connect — caching disabled");
+    });
 }
 
 export async function getCache(key: string): Promise<string | null> {

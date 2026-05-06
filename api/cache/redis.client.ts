@@ -2,25 +2,31 @@ import Redis from "ioredis";
 
 const isTest = process.env.NODE_ENV === "test";
 
+function createRedisClient(): Redis | null {
+  if (isTest) return null;
 
-// Support both Railway format (REDISHOST) and standard format (REDIS_HOST)
-const redisHost = process.env.REDISHOST || process.env.REDIS_HOST;
-const redisPort = process.env.REDISPORT || process.env.REDIS_PORT || "6379";
-const redisPassword = process.env.REDISPASSWORD || process.env.REDIS_PASSWORD;
+  const host = process.env.REDISHOST || process.env.REDIS_HOST;
+  if (!host) return null;
 
-export const redisClient =
-  isTest || !process.env.REDIS_HOST
-    ? null
-    : new Redis({
-        host: redisHost,
-        port: parseInt(redisPort, 10),
-        password: redisPassword || undefined,
-        maxRetriesPerRequest: 3,
-        enableOfflineQueue: false,
-        lazyConnect: true,
-      });
+  const port = parseInt(
+    process.env.REDISPORT || process.env.REDIS_PORT || "6379",
+    10
+  );
+  const password =
+    process.env.REDISPASSWORD || process.env.REDIS_PASSWORD || undefined;
 
-// Connect on startup
+  return new Redis({
+    host,
+    port,
+    password,
+    maxRetriesPerRequest: 3,
+    enableOfflineQueue: false,
+    lazyConnect: true,
+  });
+}
+
+export const redisClient = createRedisClient();
+
 if (redisClient) {
   redisClient.connect().catch(() => {
     console.warn("[Redis] Could not connect — caching disabled");

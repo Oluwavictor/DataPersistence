@@ -1,4 +1,4 @@
-# SOLUTION.md — Stage 4B
+# SOLUTION.md
 
 ## Part 1: Query Performance
 

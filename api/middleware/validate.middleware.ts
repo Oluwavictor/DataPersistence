@@ -1,4 +1,3 @@
-import { Request, Response, NextFunction } from "express";
 import { plainToInstance } from "class-transformer";
 import { validate, ValidationError as CVError } from "class-validator";
 import { ClassConstructor } from "class-transformer/types/interfaces";
@@ -72,8 +71,9 @@ export function validateQuery<T extends object>(DtoClass: ClassConstructor<T>) {
     res: Response,
     next: NextFunction
   ): Promise<void> => {
+    // enableImplicitConversion
     const instance = plainToInstance(DtoClass, req.query, {
-      enableImplicitConversion: false,
+      enableImplicitConversion: true,
       excludeExtraneousValues: false,
     });
 
@@ -89,6 +89,10 @@ export function validateQuery<T extends object>(DtoClass: ClassConstructor<T>) {
         .json(errorResponse(extractFirstMessage(errors)));
       return;
     }
+
+    // replace req.query with the normalized instance
+    // ensures the controller receives transformed values
+    (req as any).query = instance;
 
     next();
   };
